@@ -20,6 +20,28 @@ from tqdm import tqdm
 
 
 def _find_n_nulls(A, B, D, M):
+    """
+    Helper function for SASS that finds the optimal number of dimensions to nullify.
+    
+    This function iteratively tries different numbers of dimensions to nullify and
+    computes the error between the projected covariance matrix and the reference matrix.
+    
+    Parameters:
+    -----------
+    A : ndarray
+        Covariance matrix of data with stimulation.
+    B : ndarray
+        Covariance matrix of data without stimulation (reference).
+    D : ndarray
+        Eigenvector matrix.
+    M : ndarray
+        Inverse of D.
+        
+    Returns:
+    --------
+    int
+        Optimal number of dimensions to nullify that minimizes the error.
+    """
     errors = []
     for n_nulls in range(A.shape[0]):
         DI = np.ones(M.shape[0])
@@ -118,7 +140,10 @@ def clean_sensor_data(obj_no_stim, obj_stim):
 def compute_single_trial_connectivity(raw, measure='phase_lag_index'):
     
     """
-    Compute single-trial amplitude of target oscillation and assign it to CLAM-NIBS target phase.
+    Compute single-trial connectivity between EEG channels and assign it to CLAM-NIBS target phase.
+
+    This function computes connectivity measures between all EEG channels for each trial
+    and associates these measures with the corresponding CLAM-NIBS target phase.
 
     Parameters:
     -----------
@@ -130,14 +155,22 @@ def compute_single_trial_connectivity(raw, measure='phase_lag_index'):
     Returns:
     --------
     pandas.DataFrame
-        A DataFrame containing the computed amplitude values and CLAM-NIBS target phase for each epoch.
+        A DataFrame containing the computed connectivity matrices and CLAM-NIBS target phase for each epoch.
+        Each row contains:
+        - participant: Participant identifier
+        - session: Session identifier
+        - design: The experimental design ('trial_wise' or 'session_wise')
+        - target_phase: The target phase of CLAM-NIBS for the trial
+        - measure: The connectivity measure used (e.g., 'phase_lag_index')
+        - value: A connectivity matrix of shape (n_channels, n_channels)
 
     Raises:
     -------
     Exception
         If the input raw data is not of type RawCLAM.
-        If the method for computing amplitude is not supported.
-        If the Raw object does not meet the requirements for the chosen method.
+        If the connectivity measure is not supported.
+        If the Raw object does not meet the requirements for connectivity computation
+        (e.g., data not filtered to target frequency range or bad channels not interpolated).
     """
     
     if not isinstance(raw, RawCLAM):

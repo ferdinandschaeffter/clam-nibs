@@ -12,6 +12,33 @@ import pandas as pd
 from .stats import _dft
 
 def _onpick_sensor(event, fig, ax, pos, ch_names, bads, scatter):
+    """
+    Helper function for interactive sensor selection in set_bads.
+    
+    This function handles the event when a user clicks on a sensor in the interactive plot,
+    toggling its status as a bad channel.
+    
+    Parameters:
+    -----------
+    event : matplotlib.backend_bases.PickEvent or None
+        The pick event generated when a user clicks on a sensor.
+    fig : matplotlib.figure.Figure
+        The figure containing the sensor plot.
+    ax : matplotlib.axes.Axes
+        The axes containing the sensor plot.
+    pos : ndarray
+        Array of sensor positions.
+    ch_names : list of str
+        List of channel names.
+    bads : list of str
+        List of currently marked bad channels.
+    scatter : matplotlib.collections.PathCollection
+        The scatter plot of sensors.
+        
+    Returns:
+    --------
+    None
+    """
     if event is not None:
         if event.mouseevent.inaxes != ax:
             return

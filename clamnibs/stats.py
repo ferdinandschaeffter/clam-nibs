@@ -25,6 +25,26 @@ from .misc import df_to_array
 # Statistics over sessions in session_wise studies
 
 def _dft(x, plot_sine=False):
+    """
+    Compute the amplitude and phase of a sinusoidal modulation using Discrete Fourier Transform.
+    
+    This function computes the amplitude and phase of the first harmonic (fundamental) 
+    component of the input signal using DFT. It can also optionally plot the fitted sine wave.
+    
+    Parameters:
+    -----------
+    x : array-like
+        The input signal, typically representing measurements at different phase bins.
+    plot_sine : bool, optional
+        Whether to plot the fitted sine wave on the current figure. Default is False.
+        
+    Returns:
+    --------
+    amp : float
+        Amplitude of the sinusoidal modulation.
+    phase : float
+        Phase of the sinusoidal modulation (in radians).
+    """
     n_bins = len(x)
     phases = np.linspace(0, 2*np.pi, n_bins, endpoint=False)
     c = (x*np.exp(-1j*phases)).sum()*2/n_bins
@@ -39,10 +59,31 @@ def _dft(x, plot_sine=False):
         plt.plot(xs, ys, c='k', linewidth=3, zorder=2)
     return amp, _wrap(-phase)
 
-# Each arg in args should be of shape (n_samples, n_features)
-# This function averages over n_samples and computes DFT amplitude for each feature 
 from joblib import Parallel, delayed
 def _vectorized_dft_amp(*args):
+    """
+    Compute DFT amplitudes for multiple features in parallel.
+    
+    This function averages over samples for each feature and computes the DFT amplitude
+    in parallel using joblib.
+    
+    Parameters:
+    -----------
+    *args : tuple of arrays
+        Each argument should be an array of shape (n_samples, n_features) representing
+        data for different phase bins. If 1D arrays are provided, they are treated as
+        (n_samples, 1).
+        
+    Returns:
+    --------
+    amps : ndarray
+        Array of DFT amplitudes for each feature.
+    
+    Notes:
+    ------
+    This is a helper function for computing DFT amplitudes efficiently across multiple
+    features, which is particularly useful for sensor-level or network-level analyses.
+    """
     if args[0].ndim == 1:
         args = [arg[:, None] for arg in args]
     # Compute mean across samples for each feature
@@ -54,6 +95,19 @@ def _vectorized_dft_amp(*args):
     return amps
 
 def _dft_amp_stat(*args):
+    """
+    Wrapper function for _vectorized_dft_amp to use as a statistic function in permutation tests.
+    
+    Parameters:
+    -----------
+    *args : tuple of arrays
+        Each argument should be an array representing data for different phase bins.
+        
+    Returns:
+    --------
+    amps : ndarray
+        Array of DFT amplitudes.
+    """
     return _vectorized_dft_amp(*args)
 
 # This is a hacky solution to make permutation_cluster_test compatible with the SINE FIT BINNED procedure outlined in [1].
@@ -84,6 +138,19 @@ def _dft_amp_stat_group(*args, orig_args=None):
     return np.mean(all_dft_amps, axis=0)
 
 def _wrap(phases):
+    """
+    Wrap phase values to be between -π and π.
+    
+    Parameters:
+    -----------
+    phases : array-like
+        Phase values in radians.
+        
+    Returns:
+    --------
+    wrapped_phases : array-like
+        Phase values wrapped to the range [-π, π].
+    """
     return np.angle(np.exp(1j*phases))
 
 def test_sensor_network_modulation(
